@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Local API POST Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #22c55e;
+      --error: #ef4444;
+      --warn: #f59e0b;
+      --border: #1f2937;
+      --input: #0b1220;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: linear-gradient(135deg, #0b1220, #0f172a);
+      color: var(--text);
+    }
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 600;
+    }
+    .badge {
+      font-size: 12px;
+      color: #0b1220;
+      background: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .container {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card header {
+      border: 0;
+      background: rgba(255,255,255,0.02);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card header h2 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .card .content {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      background: var(--input);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+      line-height: 1.4;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: pre;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    .row .grow { grid-column: 1 / -1; }
+    .btn {
+      background: linear-gradient(180deg, #1dbd6b, #0ea85c);
+      color: #0b1220;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.25), inset 0 0 0 1px rgba(255,255,255,0.15);
+      transition: transform 0.08s ease, filter 0.1s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+    .btn.warn {
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      color: #0b1220;
+    }
+    .btn.error {
+      background: linear-gradient(180deg, #ef4444, #dc2626);
+      color: #0b1220;
+    }
+    .btn.ghost {
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+    }
+    .hstack { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .stack { display: grid; gap: 8px; }
+    .divider {
+      height: 1px; background: var(--border); margin: 2px 0 8px 0;
+    }
+    .kv-grid {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+    }
+    .kv-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .muted { color: var(--muted); }
+    .hint { font-size: 12px; color: var(--muted); }
+    .status {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .status.ok { background: rgba(34,197,94,0.15); color: #86efac; }
+    .status.err { background: rgba(239,68,68,0.15); color: #fecaca; }
+    .status.info { background: rgba(59,130,246,0.15); color: #bfdbfe; }
+    pre {
+      background: #0b1220;
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 420px;
+      font-size: 13px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #0b1220;
+      color: var(--muted);
+    }
+    .footer {
+      padding: 10px 14px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .file-drop {
+      border: 1px dashed var(--border);
+      background: #0b1220;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .right {
+      text-align: right;
+    }
+    @media (max-width: 1000px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Local API POST Tester</h1>
+    <span class="badge">POST</span>
+  </header>
+
+  <div class="container">
+    <section class="card">
+      <header>
+        <h2>Request</h2>
+        <div class="hstack">
+          <button id="btnSend" class="btn">Send Request</button>
+          <button id="btnAbort" class="btn error" disabled>Abort</button>
+        </div>
+      </header>
+      <div class="content">
+        <div class="row">
+          <label for="url">URL</label>
+          <input id="url" type="text" placeholder="http://localhost:3000/api/endpoint" value="http://localhost:3000/">
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label>Method</label>
+            <select id="method">
+              <option value="POST" selected>POST</option>
+              <option value="PUT">PUT</option>
+              <option value="PATCH">PATCH</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+          <div class="row" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div>
+              <label for="timeout">Timeout (ms)</label>
+              <input id="timeout" type="number" min="0" step="100" value="10000">
+            </div>
+            <div>
+              <label for="cred">Credentials</label>
+              <select id="cred">
+                <option value="omit" selected>omit</option>
+                <option value="same-origin">same-origin</option>
+                <option value="include">include</option>
+              </select>
+            </div>
+            <div>
+              <label for="mode">Mode</label>
+              <select id="mode">
+                <option value="cors" selected>cors</option>
+                <option value="same-origin">same-origin</option>
+                <option value="no-cors">no-cors (opaque)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label>Headers</label>
+          <div class="kv-grid" id="headersGrid"></div>
+          <div class="hstack">
+            <button id="addHeader" class="btn ghost">+ Add header</button>
+            <span class="hint">Tip: Content-Type defaults to application/json when a JSON body is detected.</span>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="hstack" style="justify-content: space-between;">
+            <label for="body">Body (JSON or raw)</label>
+            <div class="hstack">
+              <button id="btnFormat" class="btn secondary">Format JSON</button>
+              <button id="btnMinify" class="btn secondary">Minify JSON</button>
+              <button id="btnSample" class="btn secondary">Insert Sample</button>
+              <label class="pill">
+                <input id="autoJson" type="checkbox" checked> Auto JSON stringify
+              </label>
+            </div>
+          </div>
+          <textarea id="body" placeholder='{"message":"Hello API"}'></textarea>
+          <div class="file-drop" id="fileDrop">
+            Drag & drop a .json/.txt file here or <input type="file" id="fileInput" accept=".json,.txt"> to load body
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="hstack" style="justify-content: space-between;">
+          <div class="hstack">
+            <button id="btnCopyCurl" class="btn secondary">Copy as cURL</button>
+            <button id="btnSavePreset" class="btn secondary">Save Preset</button>
+            <select id="presetSelect">
+              <option value="">Load Preset...</option>
+            </select>
+            <button id="btnDeletePreset" class="btn secondary">Delete Preset</button>
+          </div>
+          <span class="hint">All presets are stored locally in your browser.</span>
+        </div>
+      </div>
+      <div class="footer">
+        <div>For local servers, ensure CORS is configured if accessing via file:// or another origin.</div>
+        <div class="right">Built for quick POST testing</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header>
+        <h2>Response</h2>
+        <div class="hstack">
+          <span id="respStatus" class="status info">Awaiting request...</span>
+        </div>
+      </header>
+      <div class="content">
+        <div class="two-col">
+          <div>
+            <label>Time</label>
+            <div class="pill" id="respTime">-</div>
+          </div>
+          <div>
+            <label>Size</label>
+            <div class="pill" id="respSize">-</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="hstack" style="justify-content: space-between;">
+            <label>Headers</label>
+            <button id="btnCopyHeaders" class="btn secondary">Copy Headers</button>
+          </div>
+          <pre id="respHeaders">(none)</pre>
+        </div>
+
+        <div>
+          <div class="hstack" style="justify-content: space-between;">
+            <label>Body</label>
+            <div class="hstack">
+              <button id="btnTogglePretty" class="btn secondary">Toggle Pretty</button>
+              <button id="btnCopyBody" class="btn secondary">Copy Body</button>
+              <button id="btnDownloadBody" class="btn secondary">Download Body</button>
+            </div>
+          </div>
+          <pre id="respBody">(none)</pre>
+        </div>
+
+        <div>
+          <label>Diagnostics</label>
+          <pre id="diagnostics" class="muted">No diagnostics yet.</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const headersGrid = el('headersGrid');
+    const addHeaderBtn = el('addHeader');
+    const urlInput = el('url');
+    const methodSelect = el('method');
+    const bodyInput = el('body');
+    const btnSend = el('btnSend');
+    const btnAbort = el('btnAbort');
+    const timeoutInput = el('timeout');
+    const credSelect = el('cred');
+    const modeSelect = el('mode');
+    const btnFormat = el('btnFormat');
+    const btnMinify = el('btnMinify');
+    const btnSample = el('btnSample');
+    const autoJsonChk = el('autoJson');
+    const fileDrop = el('fileDrop');
+    const fileInput = el('fileInput');
+
+    const respStatus = el('respStatus');
+    const respTime = el('respTime');
+    const respSize = el('respSize');
+    const respHeaders = el('respHeaders');
+    const respBody = el('respBody');
+    const btnTogglePretty = el('btnTogglePretty');
+    const btnCopyBody = el('btnCopyBody');
+    const btnDownloadBody = el('btnDownloadBody');
+    const btnCopyHeaders = el('btnCopyHeaders');
+    const btnCopyCurl = el('btnCopyCurl');
+    const btnSavePreset = el('btnSavePreset');
+    const btnDeletePreset = el('btnDeletePreset');
+    const presetSelect = el('presetSelect');
+    const diagnostics = el('diagnostics');
+
+    let lastController = null;
+    let lastResponseText = '';
+    let lastResponsePretty = '';
+    let showPretty = true;
+
+    function addHeaderRow(key = '', value = '') {
+      const row = document.createElement('div');
+      row.className = 'kv-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Header name" value="${escapeHtml(key)}">
+        <input type="text" placeholder="Header value" value="${escapeHtml(value)}">
+        <button class="btn secondary">Remove</button>
+      `;
+      const [k,v,btn] = row.children;
+      btn.addEventListener('click', () => row.remove());
+      headersGrid.appendChild(row);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
+    }
+
+    function getHeadersFromGrid() {
+      const rows = Array.from(headersGrid.querySelectorAll('.kv-row'));
+      const headers = {};
+      for (const r of rows) {
+        const k = r.children[0].value.trim();
+        const v = r.children[1].value;
+        if (k) headers[k] = v;
+      }
+      return headers;
+    }
+
+    function ensureDefaultHeaders() {
+      const rows = Array.from(headersGrid.querySelectorAll('.kv-row'));
+      const hasContentType = rows.some(r => r.children[0].value.toLowerCase() === 'content-type');
+      if (!hasContentType) {
+        addHeaderRow('Content-Type', 'application/json');
+      }
+    }
+
+    function formatJson(minify=false) {
+      const txt = bodyInput.value.trim();
+      if (!txt) return;
+      try {
+        const parsed = JSON.parse(txt);
+        bodyInput.value = minify ? JSON.stringify(parsed) : JSON.stringify(parsed, null, 2);
+      } catch (e) {
+        alert('Body is not valid JSON.');
+      }
+    }
+
+    function bytesToHuman(size) {
+      if (size < 1024) return size + ' B';
+      const units = ['KB','MB','GB'];
+      let i= -1; do { size /= 1024; i++; } while (size >= 1024 && i < units.length - 1);
+      return size.toFixed(2) + ' ' + units[i];
+    }
+
+    function createCurl() {
+      const url = urlInput.value.trim();
+      const method = methodSelect.value;
+      const headers = getHeadersFromGrid();
+      let body = bodyInput.value;
+      // If JSON auto and content-type json, ensure minified
+      const ct = Object.keys(headers).find(h => h.toLowerCase() === 'content-type');
+      if (autoJsonChk.checked && ct && headers[ct].toLowerCase().includes('application/json')) {
+        try { body = JSON.stringify(JSON.parse(body)); } catch {}
+      }
+      let parts = [`curl -X ${shellEscape(method)} ${shellEscape(url)}`];
+      for (const [k,v] of Object.entries(headers)) {
+        parts.push(`-H ${shellEscape(k + ': ' + v)}`);
+      }
+      if (body) parts.push(`--data ${shellEscape(body)}`);
+      return parts.join(' ');
+    }
+
+    function shellEscape(str) {
+      // Use single quotes and escape existing single quotes
+      return `'${String(str).replace(/'/g, `'\\''`)}'`;
+    }
+
+    function copyToClipboard(text, label='Copied!') {
+      navigator.clipboard.writeText(text).then(() => {
+        toast(label);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        toast(label);
+      });
+    }
+
+    let toastTimeout = null;
+    function toast(msg) {
+      clearTimeout(toastTimeout);
+      respStatus.textContent = msg;
+      respStatus.className = 'status info';
+      toastTimeout = setTimeout(() => { respStatus.textContent = 'Ready'; }, 1200);
+    }
+
+    function loadPresets() {
+      const presets = JSON.parse(localStorage.getItem('postTester.presets') || '{}');
+      presetSelect.innerHTML = '<option value="">Load Preset...</option>';
+      Object.keys(presets).forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = k;
+        presetSelect.appendChild(opt);
+      });
+    }
+
+    function savePreset() {
+      const name = prompt('Preset name');
+      if (!name) return;
+      const presets = JSON.parse(localStorage.getItem('postTester.presets') || '{}');
+      presets[name] = {
+        url: urlInput.value,
+        method: methodSelect.value,
+        headers: getHeadersFromGrid(),
+        body: bodyInput.value,
+        cred: credSelect.value,
+        mode: modeSelect.value,
+        timeout: timeoutInput.value
+      };
+      localStorage.setItem('postTester.presets', JSON.stringify(presets));
+      loadPresets();
+      presetSelect.value = name;
+      toast('Preset saved');
+    }
+
+    function applyPreset(name) {
+      const presets = JSON.parse(localStorage.getItem('postTester.presets') || '{}');
+      const p = presets[name];
+      if (!p) return;
+      urlInput.value = p.url || '';
+      methodSelect.value = p.method || 'POST';
+      headersGrid.innerHTML = '';
+      if (p.headers) {
+        for (const [k,v] of Object.entries(p.headers)) addHeaderRow(k, v);
+      } else {
+        ensureDefaultHeaders();
+      }
+      bodyInput.value = p.body || '';
+      credSelect.value = p.cred || 'omit';
+      modeSelect.value = p.mode || 'cors';
+      timeoutInput.value = p.timeout || '10000';
+      toast('Preset loaded');
+    }
+
+    function deletePreset() {
+      const name = presetSelect.value;
+      if (!name) return alert('Select a preset to delete.');
+      const presets = JSON.parse(localStorage.getItem('postTester.presets') || '{}');
+      if (!presets[name]) return;
+      if (!confirm(`Delete preset "${name}"?`)) return;
+      delete presets[name];
+      localStorage.setItem('postTester.presets', JSON.stringify(presets));
+      loadPresets();
+      presetSelect.value = '';
+      toast('Preset deleted');
+    }
+
+    function setStatus(text, ok=null) {
+      respStatus.textContent = text;
+      if (ok === true) respStatus.className = 'status ok';
+      else if (ok === false) respStatus.className = 'status err';
+      else respStatus.className = 'status info';
+    }
+
+    function setDiagnostics(msg) {
+      diagnostics.textContent = msg;
+    }
+
+    async function sendRequest() {
+      const url = urlInput.value.trim();
+      const method = methodSelect.value;
+      if (!url) {
+        alert('Please enter a URL.');
+        return;
+      }
+
+      const headers = getHeadersFromGrid();
+      let bodyText = bodyInput.value;
+
+      // Auto JSON handling
+      let ctKey = Object.keys(headers).find(h => h.toLowerCase() === 'content-type');
+      if (!ctKey && bodyText.trim()) {
+        headers['Content-Type'] = 'application/json';
+        ctKey = 'Content-Type';
+      }
+      const contentType = ctKey ? String(headers[ctKey]).toLowerCase() : '';
+
+      if (autoJsonChk.checked && contentType.includes('application/json') && bodyText.trim()) {
+        try {
+          bodyText = JSON.stringify(JSON.parse(bodyText));
+        } catch (e) {
+          if (!confirm('Body is not valid JSON. Send as raw text?')) return;
+        }
+      }
+
+      // Prepare fetch options
+      const controller = new AbortController();
+      lastController = controller;
+      btnAbort.disabled = false;
+      btnSend.disabled = true;
+      setStatus('Sending...');
+      setDiagnostics('Request in flight...');
+      respTime.textContent = '-';
+      respSize.textContent = '-';
+      respHeaders.textContent = '(none)';
+      respBody.textContent = '(none)';
+      lastResponseText = '';
+      lastResponsePretty = '';
+
+      const options = {
+        method,
+        headers,
+        body: ['GET','HEAD'].includes(method) ? undefined : bodyText,
+        credentials: credSelect.value,
+        mode: modeSelect.value,
+        signal: controller.signal,
+      };
+
+      const start = performance.now();
+
+      let timer = null;
+      const timeoutMs = parseInt(timeoutInput.value || '0', 10);
+      if (timeoutMs > 0) {
+        timer = setTimeout(() => {
+          try { controller.abort(); } catch {}
+        }, timeoutMs);
+      }
+
+      try {
+        const response = await fetch(url, options);
+        const end = performance.now();
+
+        const timeMs = Math.round(end - start);
+        respTime.textContent = timeMs + ' ms';
+
+        const hdrPairs = [];
+        response.headers.forEach((v, k) => hdrPairs.push(`${k}: ${v}`));
+        respHeaders.textContent = hdrPairs.length ? hdrPairs.join('\n') : '(none)';
+
+        const text = await (modeSelect.value === 'no-cors' ? Promise.resolve('(opaque response; body not readable in no-cors mode)') : response.text());
+        lastResponseText = text;
+
+        // Compute size
+        const sizeBytes = new Blob([text]).size;
+        respSize.textContent = bytesToHuman(sizeBytes);
+
+        // Try to pretty print JSON
+        let pretty = text;
+        try {
+          pretty = JSON.stringify(JSON.parse(text), null, 2);
+          lastResponsePretty = pretty;
+        } catch {
+          lastResponsePretty = '';
+        }
+
+        showPretty = true;
+        respBody.textContent = lastResponsePretty || text;
+
+        setStatus(`${response.status} ${response.statusText || ''}`.trim(), response.ok);
+        setDiagnostics(`ok: ${response.ok}\nredirected: ${response.redirected}\nstatus: ${response.status}\nurl: ${response.url}\n\nIf you see a CORS error in the browser console, configure your local server to allow this origin or run this page from the same origin as the API.`);
+      } catch (err) {
+        const end = performance.now();
+        const timeMs = Math.round(end - start);
+        respTime.textContent = timeMs + ' ms';
+        setStatus(err.name === 'AbortError' ? 'Request aborted' : 'Network error', false);
+        respBody.textContent = String(err);
+        respHeaders.textContent = '(none)';
+        respSize.textContent = '0 B';
+
+        let tip = 'A network error occurred.';
+        if (String(err).toLowerCase().includes('failed to fetch')) {
+          tip += '\n\nPossible causes:\n- Server not running at the given URL\n- CORS blocked the request (check server CORS headers)\n- Mixed-content (https page to http API)\n- Invalid URL or port';
+        }
+        if (err.name === 'AbortError') {
+          tip += '\n\nThe request was aborted (timeout or user abort).';
+        }
+        setDiagnostics(tip);
+      } finally {
+        if (timer) clearTimeout(timer);
+        btnAbort.disabled = true;
+        btnSend.disabled = false;
+        lastController = null;
+      }
+    }
+
+    function abortRequest() {
+      if (lastController) {
+        lastController.abort();
+      }
+    }
+
+    function togglePretty() {
+      if (!lastResponseText) return;
+      showPretty = !showPretty;
+      if (showPretty && lastResponsePretty) {
+        respBody.textContent = lastResponsePretty;
+      } else if (showPretty && !lastResponsePretty) {
+        try {
+          lastResponsePretty = JSON.stringify(JSON.parse(lastResponseText), null, 2);
+          respBody.textContent = lastResponsePretty;
+        } catch {
+          // fallback to raw if not JSON
+          showPretty = false;
+          respBody.textContent = lastResponseText;
+        }
+      } else {
+        respBody.textContent = lastResponseText;
+      }
+    }
+
+    function downloadBody() {
+      const blob = new Blob([respBody.textContent], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'response.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function setupFileDrop() {
+      function prevent(e){ e.preventDefault(); e.stopPropagation(); }
+      ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+        fileDrop.addEventListener(evt, prevent);
+      });
+      ['dragenter','dragover'].forEach(evt => {
+        fileDrop.addEventListener(evt, () => fileDrop.style.borderColor = '#22c55e');
+      });
+      ;['dragleave','drop'].forEach(evt => {
+        fileDrop.addEventListener(evt, () => fileDrop.style.borderColor = 'var(--border)');
+      });
+      fileDrop.addEventListener('drop', async (e) => {
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        bodyInput.value = text;
+        toast('Loaded body from file');
+      });
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        bodyInput.value = text;
+        toast('Loaded body from file');
+        fileInput.value = '';
+      });
+    }
+
+    // Event bindings
+    addHeaderBtn.addEventListener('click', () => addHeaderRow());
+    btnFormat.addEventListener('click', () => formatJson(false));
+    btnMinify.addEventListener('click', () => formatJson(true));
+    btnSample.addEventListener('click', () => {
+      if (!bodyInput.value.trim()) bodyInput.value = JSON.stringify({ message: 'Hello API', time: new Date().toISOString() }, null, 2);
+      if (!urlInput.value.trim()) urlInput.value = 'http://localhost:3000/';
+      toast('Sample inserted');
+    });
+    btnSend.addEventListener('click', sendRequest);
+    btnAbort.addEventListener('click', abortRequest);
+    btnTogglePretty.addEventListener('click', togglePretty);
+    btnCopyBody.addEventListener('click', () => copyToClipboard(respBody.textContent, 'Body copied'));
+    btnCopyHeaders.addEventListener('click', () => copyToClipboard(respHeaders.textContent, 'Headers copied'));
+    btnDownloadBody.addEventListener('click', downloadBody);
+    btnCopyCurl.addEventListener('click', () => copyToClipboard(createCurl(), 'cURL copied'));
+    btnSavePreset.addEventListener('click', savePreset);
+    btnDeletePreset.addEventListener('click', deletePreset);
+    presetSelect.addEventListener('change', (e) => {
+      if (e.target.value) applyPreset(e.target.value);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'enter') {
+        e.preventDefault();
+        sendRequest();
+      }
+    });
+
+    // Initial setup
+    ensureDefaultHeaders();
+    addHeaderRow('Accept', 'application/json');
+    loadPresets();
+    setupFileDrop();
+  </script>
+</body>
+</html>
